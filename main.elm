@@ -4,6 +4,7 @@ import Platform.Cmd exposing (..)
 import Html.Events exposing (..)
 import String
 import Random
+import Task
 
 type alias Flags =
   { foo : Int
@@ -25,7 +26,9 @@ type alias Model =
    attackerPieces: Int,
    defenderPieces: Int,
    defenderDice : List Int,
-   attackerDice : List Int
+   attackerDice : List Int,
+   attackerLoss: Int,
+   defenderLoss: Int
   }
 
 
@@ -36,20 +39,26 @@ init flags =
   , defenderPieces = 0
   , defenderDice = [0]
   , attackerDice = [0]
+  , attackerLoss = 0
+  , defenderLoss = 0
   } ! []
 
 
 
   -- UPDATE
 
-type Msg =  SetAttackerPieces String | SetDefenderPieces String | RollDice | NewAttackerList (List Int)| NewDefenderList (List Int)
+type Msg =  Battle | SetAttackerPieces String | SetDefenderPieces String | RollDice | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
   (RollDice) ->  (model, Random.generate NewAttackerList (Random.list 3 (Random.int 1 6)))
   (NewAttackerList lst) ->  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list 2 (Random.int 1 6)))
-  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  Cmd.none)
+  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
+  (Battle) -> let results = battle model in ({model |
+  attackerLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
+  ,  defenderLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
+  }, Cmd.none)
 
 
   -- VIEW
@@ -95,3 +104,8 @@ zip xs ys =
 
     (_, _) ->
         []
+
+send : msg -> Cmd msg
+send msg =
+  Task.succeed msg
+  |> Task.perform identity
