@@ -47,10 +47,10 @@ init flags =
 
   -- UPDATE
 
-type Msg =  Battle | SetAttackerPieces String | SetDefenderPieces String | RollDice | NewAttackerList (List Int)| NewDefenderList (List Int)
+type Msg =  Battle | SetAttackerPieces String | SetDefenderPieces String | Attack | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (RollDice) ->  (model, Random.generate NewAttackerList (Random.list 3 (Random.int 1 6)))
+  (Attack) ->  (model, Random.generate NewAttackerList (Random.list 3 (Random.int 1 6)))
   (NewAttackerList lst) ->  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list 2 (Random.int 1 6)))
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
@@ -67,10 +67,10 @@ view model =
     div []
       [ input [type_ "text", onInput SetAttackerPieces, placeholder "Attacker Pieces"] []
       , input [type_ "text", onInput SetDefenderPieces , placeholder "Defender Pieces"] []
-      , input [type_ "button", onClick RollDice, value "Roll"] []
+      , input [type_ "button", onClick Attack, value "Attack"] []
       , table [] [ tr [] [
           td [] [
-            ul [] (List.map (\x->li [] [text (toString x)]) (battle model))
+            text <| toString model.attackerLoss
           ]
           ,td [attribute "valign" "top"] [
             ul [color "red" ] (List.map (\x -> li [] [text (toString x)]) model.attackerDice)
