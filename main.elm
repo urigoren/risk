@@ -48,14 +48,8 @@ update msg model = case msg of
   (RollDice) ->  (model, Random.generate NewAttackerList (Random.list 3 (Random.int 1 6)))
   (NewAttackerList lst) ->  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list 2 (Random.int 1 6)))
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  Cmd.none)
-  (SetAttackerPieces str) ->  ({model | attackerPieces = case String.toInt str of
-                                        Err msg -> 0
-                                        Ok val -> val
-                              },  Cmd.none)
-  (SetDefenderPieces str) ->  ({model | defenderPieces = case String.toInt str of
-                                        Err msg -> 0
-                                        Ok val -> val
-                              },  Cmd.none)
+  (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
+  (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
 
 
   -- VIEW
@@ -78,9 +72,20 @@ view model =
         ]]
       ]
 
+
+-- SUBSCRIPTIONS
+subscriptions : Model -> Sub Msg
+subscriptions model = Sub.none
+
+-- HELPER FUNCS
+
 color c = style [("color", c)]
 
 battle model = List.map (\(x,y) -> if x>y then 1 else -1) (zip model.attackerDice model.defenderDice)
+
+toIntOrZeros str = case String.toInt str of
+                          Err msg -> 0
+                          Ok val -> val
 
 zip : List a -> List b -> List (a,b)
 zip xs ys =
@@ -90,7 +95,3 @@ zip xs ys =
 
     (_, _) ->
         []
-
--- SUBSCRIPTIONS
-subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
