@@ -1,0 +1,12 @@
+<body>
+  <div id="myContainer"></div>
+  <script src="Main.js"></script>
+  <script>
+  window.globals = {
+  "foo": 123,
+  "nested": { "bar": "abc" }
+};
+    var myContainer = document.getElementById("myContainer");
+    var app = Elm.Main.embed(myContainer, window.globals);
+  </script>
+</body>

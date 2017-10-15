@@ -53,3 +53,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+main.js
+elm-package.json
