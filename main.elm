@@ -75,10 +75,11 @@ update msg model = case msg of
 view : Model -> Html Msg
 view model =
     div []
-      [ input [type_ "text", onInput SetAttackerPieces, placeholder "Attacker Pieces"] []
-      , input [type_ "text", onInput SetDefenderPieces , placeholder "Defender Pieces"] []
-      , input [type_ "text", onInput SetMinimumAttackerGuard , placeholder "Minimum Attacker Guard"] []
-      , input [type_ "button", onClick (Attack 0), value "Attack"] []
+      [ h1 [] [(text "Risk Box-Game Dice Simulator")]
+      , p [] [text "Attacker Pieces: ", input [type_ "text", onInput SetAttackerPieces, placeholder "Attacker Pieces", value (toString model.attackerPieces)] []]
+      , p [] [text "Defender Pieces: ",input [type_ "text", onInput SetDefenderPieces , placeholder "Defender Pieces", value (toString model.defenderPieces)] []]
+      , p [] [text "Attacker Minumum: ",input [type_ "text", onInput SetMinimumAttackerGuard , placeholder "Minimum Attacker Guard", value (toString model.attackerGuardMinimum)] []]
+      , p[] [input [type_ "button", onClick (Attack 0), value "Attack"] []]
       , div [] [text ("Attacker loss: " ++ (toString model.attackerLoss) ++ ", Defender loss: " ++ (toString model.defenderLoss))]
       , table [] (List.map viewOneRoll (model.logRolls ++ [(model.attackerDice, model.defenderDice)]))
       ]
