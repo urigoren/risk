@@ -21,8 +21,7 @@ main =
 -- MODEL
 
 type alias Model =
-  {
-   attacking: Bool
+  { logRolls: List (List Int , List Int)
    , attackerPieces: Int
    , defenderPieces: Int
    , defenderDice : List Int
@@ -35,8 +34,7 @@ type alias Model =
 
 init : Flags -> (Model, Cmd Msg)
 init flags =
-  {
-  attacking = False
+  { logRolls = []
   , attackerGuardMinimum = 1
   , attackerPieces = 0
   , defenderPieces = 0
@@ -50,22 +48,26 @@ init flags =
 
   -- UPDATE
 
-type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | Attack | NewAttackerList (List Int)| NewDefenderList (List Int)
+type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (Attack) ->  let numDiceAttacker = if model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum > 3 then 3 else model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum in
-    case model.attacking of
-    False -> ({model| attacking=True, attackerLoss=0, defenderLoss=0}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
-    True -> ({model| attacking=True}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
+  (Attack again) ->  let numDiceAttacker = if model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum > 3 then 3 else model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum in
+    if again==0 then
+    ({model| attackerLoss=0, defenderLoss=0, logRolls=[]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
+    else
+    ({model | logRolls = model.logRolls ++ [(model.attackerDice, model.defenderDice)]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
   (NewAttackerList lst) ->  let numDiceDefender = Basics.min 2 model.defenderPieces-model.defenderLoss in
   ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6)))
-  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle)
+  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
-  (Battle i) -> let results = battle model in ({model |
-  attackerLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
-  ,  defenderLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
-  }, Cmd.none)
+  (Battle i) -> let
+    results = battle model
+    aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
+    dLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
+    next = if (model.attackerPieces-aLoss>model.attackerGuardMinimum) && (model.defenderPieces-dLoss>0) then send Attack 1 else  Cmd.none
+  in
+   ({model | attackerLoss = aLoss,  defenderLoss = dLoss}, next)
 
 
   -- VIEW
@@ -74,20 +76,24 @@ view model =
     div []
       [ input [type_ "text", onInput SetAttackerPieces, placeholder "Attacker Pieces"] []
       , input [type_ "text", onInput SetDefenderPieces , placeholder "Defender Pieces"] []
-      , input [type_ "button", onClick Attack, value "Attack"] []
-      , table [] [ tr [] [
-          td [] [
-            text <| toString model.attackerLoss
-          ]
-          ,td [attribute "valign" "top"] [
-            ul [color "red" ] (List.map (\x -> li [] [text (toString x)]) model.attackerDice)
-          ]
-          ,td [attribute "valign" "top"] [
-            ul [color "blue" ] (List.map (\x -> li [] [text (toString x)]) model.defenderDice)
-          ]
-        ]]
+      , input [type_ "button", onClick (Attack 0), value "Attack"] []
+      , table [] (List.map viewOneRoll model.logRolls)
       ]
 
+
+viewOneRoll tuple =
+  let
+    a = Tuple.first tuple
+    d = Tuple.second tuple
+  in
+  tr [] [
+    td [attribute "valign" "top"] [
+      ul [color "red" ] (List.map (\x -> li [] [text (toString x)]) a)
+    ]
+    ,td [attribute "valign" "top"] [
+      ul [color "blue" ] (List.map (\x -> li [] [text (toString x)]) d)
+    ]
+  ]
 
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
@@ -112,5 +118,5 @@ zip xs ys =
     (_, _) ->
         []
 
-send msg =
-  Random.generate msg (Random.int 1 6)
+send msg v=
+  Random.generate msg (Random.int v v)
