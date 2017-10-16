@@ -4,7 +4,6 @@ import Platform.Cmd exposing (..)
 import Html.Events exposing (..)
 import String
 import Random
-import Task
 
 type alias Flags =
   { foo : Int
@@ -23,19 +22,23 @@ main =
 
 type alias Model =
   {
-   attackerPieces: Int,
-   defenderPieces: Int,
-   defenderDice : List Int,
-   attackerDice : List Int,
-   attackerLoss: Int,
-   defenderLoss: Int
+   attacking: Bool
+   , attackerPieces: Int
+   , defenderPieces: Int
+   , defenderDice : List Int
+   , attackerDice : List Int
+   , attackerLoss: Int
+   , defenderLoss: Int
+   , attackerGuardMinimum: Int
   }
 
 
 init : Flags -> (Model, Cmd Msg)
 init flags =
   {
-  attackerPieces = 0
+  attacking = False
+  , attackerGuardMinimum = 1
+  , attackerPieces = 0
   , defenderPieces = 0
   , defenderDice = [0]
   , attackerDice = [0]
@@ -47,15 +50,19 @@ init flags =
 
   -- UPDATE
 
-type Msg =  Battle | SetAttackerPieces String | SetDefenderPieces String | Attack | NewAttackerList (List Int)| NewDefenderList (List Int)
+type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | Attack | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (Attack) ->  (model, Random.generate NewAttackerList (Random.list 3 (Random.int 1 6)))
-  (NewAttackerList lst) ->  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list 2 (Random.int 1 6)))
+  (Attack) ->  let numDiceAttacker = if model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum > 3 then 3 else model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum in
+    case model.attacking of
+    False -> ({model| attacking=True, attackerLoss=0, defenderLoss=0}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
+    True -> ({model| attacking=True}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
+  (NewAttackerList lst) ->  let numDiceDefender = Basics.min 2 model.defenderPieces-model.defenderLoss in
+  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6)))
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
-  (Battle) -> let results = battle model in ({model |
+  (Battle i) -> let results = battle model in ({model |
   attackerLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
   ,  defenderLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
   }, Cmd.none)
@@ -105,7 +112,5 @@ zip xs ys =
     (_, _) ->
         []
 
-send : msg -> Cmd msg
 send msg =
-  Task.succeed msg
-  |> Task.perform identity
+  Random.generate msg (Random.int 1 6)
