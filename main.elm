@@ -48,7 +48,7 @@ init flags =
 
   -- UPDATE
 
-type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
+type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | SetMinimumAttackerGuard String| Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
   (Attack again) ->  let numDiceAttacker = if model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum > 3 then 3 else model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum in
@@ -61,6 +61,7 @@ update msg model = case msg of
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
+  (SetMinimumAttackerGuard str) ->  ({model | attackerGuardMinimum = toIntOrZeros str},  Cmd.none)
   (Battle i) -> let
     results = battle model
     aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
@@ -76,7 +77,9 @@ view model =
     div []
       [ input [type_ "text", onInput SetAttackerPieces, placeholder "Attacker Pieces"] []
       , input [type_ "text", onInput SetDefenderPieces , placeholder "Defender Pieces"] []
+      , input [type_ "text", onInput SetMinimumAttackerGuard , placeholder "Minimum Attacker Guard"] []
       , input [type_ "button", onClick (Attack 0), value "Attack"] []
+      , div [] [text ("Attacker loss: " ++ (toString model.attackerLoss) ++ ", Defender loss: " ++ (toString model.defenderLoss))]
       , table [] (List.map viewOneRoll model.logRolls)
       ]
 
