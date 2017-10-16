@@ -66,7 +66,7 @@ update msg model = case msg of
     results = battle model
     aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
     dLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
-    next = if (model.attackerPieces-aLoss>model.attackerGuardMinimum) && (model.defenderPieces-dLoss>0) then send Attack 1 else  Cmd.none
+    next = if (model.attackerPieces-aLoss>model.attackerGuardMinimum) && (model.defenderPieces>dLoss) then send Attack 1 else  Cmd.none
   in
    ({model | attackerLoss = aLoss,  defenderLoss = dLoss}, next)
 
@@ -80,7 +80,7 @@ view model =
       , input [type_ "text", onInput SetMinimumAttackerGuard , placeholder "Minimum Attacker Guard"] []
       , input [type_ "button", onClick (Attack 0), value "Attack"] []
       , div [] [text ("Attacker loss: " ++ (toString model.attackerLoss) ++ ", Defender loss: " ++ (toString model.defenderLoss))]
-      , table [] (List.map viewOneRoll model.logRolls)
+      , table [] (List.map viewOneRoll (model.logRolls ++ [(model.attackerDice, model.defenderDice)]))
       ]
 
 
