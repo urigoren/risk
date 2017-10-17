@@ -52,7 +52,6 @@ init defaults =
 type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | SetMinimumAttackerGuard String| Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
   (SetMinimumAttackerGuard str) ->  ({model | attackerGuardMinimum = toIntOrZeros str},  Cmd.none)
@@ -69,6 +68,7 @@ update msg model = case msg of
       defenderRoll = Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6))
     in
   ({model | attackerDice = List.reverse <| List.sort lst},  defenderRoll)
+  (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (Battle i) -> let
     battle = List.map (\(x,y) -> if x>y then 1 else -1) (zip model.attackerDice model.defenderDice)
     aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) battle))
