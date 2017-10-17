@@ -52,13 +52,19 @@ init defaults =
 type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | SetMinimumAttackerGuard String| Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (Attack again) ->  let numDiceAttacker = Basics.min 3 (model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum) in
-    if again==0 then
-    ({model| attackerLoss=0, defenderLoss=0, logRolls=[]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
+  (Attack again) ->  let
+      numDiceAttacker = Basics.min 3 (model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum)
+      attackerRoll = Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6))
+    in
+    if again == 0 then
+    ({model| attackerLoss=0, defenderLoss=0, logRolls=[]}, attackerRoll)
     else
-    ({model | logRolls = model.logRolls ++ [(model.attackerDice, model.defenderDice)]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
-  (NewAttackerList lst) ->  let numDiceDefender = Basics.min 2 (model.defenderPieces-model.defenderLoss) in
-  ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6)))
+    ({model | logRolls = model.logRolls ++ [(model.attackerDice, model.defenderDice)]}, attackerRoll)
+  (NewAttackerList lst) ->  let
+      numDiceDefender = Basics.min 2 (model.defenderPieces-model.defenderLoss)
+      defenderRoll = Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6))
+    in
+  ({model | attackerDice = List.reverse <| List.sort lst},  defenderRoll)
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
