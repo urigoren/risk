@@ -5,9 +5,10 @@ import Html.Events exposing (..)
 import String
 import Random
 
-type alias Flags =
-  { foo : Int
-  , nested : { bar : String }
+type alias DefaultValues =
+  { attackerPieces : Int
+  , defenderPieces : Int
+  , attackerGuardMinimum : Int
   }
 
 main =
@@ -32,14 +33,14 @@ type alias Model =
   }
 
 
-init : Flags -> (Model, Cmd Msg)
-init flags =
+init : DefaultValues -> (Model, Cmd Msg)
+init defaults =
   { logRolls = []
-  , attackerGuardMinimum = 1
-  , attackerPieces = 0
-  , defenderPieces = 0
-  , defenderDice = [0]
-  , attackerDice = [0]
+  , attackerGuardMinimum = defaults.attackerGuardMinimum
+  , attackerPieces = defaults.attackerPieces
+  , defenderPieces = defaults.defenderPieces
+  , defenderDice = []
+  , attackerDice = []
   , attackerLoss = 0
   , defenderLoss = 0
   } ! []
@@ -85,11 +86,7 @@ view model =
       ]
 
 
-viewOneRoll tuple =
-  let
-    a = Tuple.first tuple
-    d = Tuple.second tuple
-  in
+viewOneRoll (a,d) =
   tr [] [
     td [attribute "valign" "top"] [
       ul [color "red" ] (List.map (\x -> li [] [text (toString x)]) a)

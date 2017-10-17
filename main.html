@@ -2,11 +2,12 @@
   <div id="myContainer"></div>
   <script src="Main.js"></script>
   <script>
-  window.globals = {
-  "foo": 123,
-  "nested": { "bar": "abc" }
+  window.defaults = {
+  "attackerPieces": 5,
+  "defenderPieces": 2,
+  "attackerGuardMinimum": 1
 };
     var myContainer = document.getElementById("myContainer");
-    var app = Elm.Main.embed(myContainer, window.globals);
+    var app = Elm.Main.embed(myContainer, window.defaults);
   </script>
 </body>
