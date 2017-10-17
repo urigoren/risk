@@ -52,22 +52,22 @@ init defaults =
 type Msg =  Battle Int| SetAttackerPieces String | SetDefenderPieces String | SetMinimumAttackerGuard String| Attack Int | NewAttackerList (List Int)| NewDefenderList (List Int)
 
 update msg model = case msg of
-  (Attack again) ->  let numDiceAttacker = if model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum > 3 then 3 else model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum in
+  (Attack again) ->  let numDiceAttacker = Basics.min 3 (model.attackerPieces-model.attackerLoss-model.attackerGuardMinimum) in
     if again==0 then
     ({model| attackerLoss=0, defenderLoss=0, logRolls=[]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
     else
     ({model | logRolls = model.logRolls ++ [(model.attackerDice, model.defenderDice)]}, Random.generate NewAttackerList (Random.list numDiceAttacker (Random.int 1 6)))
-  (NewAttackerList lst) ->  let numDiceDefender = Basics.min 2 model.defenderPieces-model.defenderLoss in
+  (NewAttackerList lst) ->  let numDiceDefender = Basics.min 2 (model.defenderPieces-model.defenderLoss) in
   ({model | attackerDice = List.reverse <| List.sort lst},  Random.generate NewDefenderList (Random.list numDiceDefender (Random.int 1 6)))
   (NewDefenderList lst) ->  ({model | defenderDice = List.reverse <| List.sort lst},  send Battle 0)
   (SetAttackerPieces str) ->  ({model | attackerPieces = toIntOrZeros str},  Cmd.none)
   (SetDefenderPieces str) ->  ({model | defenderPieces = toIntOrZeros str},  Cmd.none)
   (SetMinimumAttackerGuard str) ->  ({model | attackerGuardMinimum = toIntOrZeros str},  Cmd.none)
   (Battle i) -> let
-    results = battle model
-    aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) results))
-    dLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) results))
-    next = if (model.attackerPieces-aLoss>model.attackerGuardMinimum) && (model.defenderPieces>dLoss) then send Attack 1 else  Cmd.none
+    battle = List.map (\(x,y) -> if x>y then 1 else -1) (zip model.attackerDice model.defenderDice)
+    aLoss = model.attackerLoss - (List.sum (List.filter (\x->x<0) battle))
+    dLoss = model.defenderLoss + (List.sum (List.filter (\x->x>0) battle))
+    next = if ((model.attackerPieces-aLoss)>model.attackerGuardMinimum) && (model.defenderPieces>dLoss) then send Attack 1 else  Cmd.none
   in
    ({model | attackerLoss = aLoss,  defenderLoss = dLoss}, next)
 
@@ -96,15 +96,14 @@ viewOneRoll (a,d) =
     ]
   ]
 
+color c = style [("color", c)]
+
+
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
 subscriptions model = Sub.none
 
 -- HELPER FUNCS
-
-color c = style [("color", c)]
-
-battle model = List.map (\(x,y) -> if x>y then 1 else -1) (zip model.attackerDice model.defenderDice)
 
 toIntOrZeros str = case String.toInt str of
                           Err msg -> 0
