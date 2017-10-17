@@ -2,7 +2,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Platform.Cmd exposing (..)
 import Html.Events exposing (..)
-import String
+import String exposing (toInt)
 import Random
 
 type alias DefaultValues =
@@ -111,7 +111,7 @@ subscriptions model = Sub.none
 
 -- HELPER FUNCS
 
-toIntOrZeros str = case String.toInt str of
+toIntOrZeros str = case toInt str of
                           Err msg -> 0
                           Ok val -> val
 
